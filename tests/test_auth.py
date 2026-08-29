@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from app.core.config import Settings
@@ -69,3 +70,13 @@ def test_brevo_api_delivery_uses_https(monkeypatch):
     assert captured["json"]["sender"]["email"] == "verified@example.com"
     assert captured["json"]["to"] == [{"email": "citizen@example.com"}]
     assert "123456" in captured["json"]["textContent"]
+
+
+def test_expiry_check_accepts_postgres_and_sqlite_datetimes():
+    aware_future = datetime.now(timezone.utc) + timedelta(minutes=5)
+    naive_future = aware_future.replace(tzinfo=None)
+    aware_past = datetime.now(timezone.utc) - timedelta(minutes=5)
+
+    assert AuthService._is_expired(aware_future) is False
+    assert AuthService._is_expired(naive_future) is False
+    assert AuthService._is_expired(aware_past) is True

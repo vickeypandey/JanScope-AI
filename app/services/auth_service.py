@@ -6,7 +6,7 @@ import re
 import secrets
 import smtplib
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 
 import httpx
@@ -26,7 +26,16 @@ class AuthService:
 
     @staticmethod
     def _now() -> datetime:
-        return datetime.utcnow()
+        return datetime.now(timezone.utc)
+
+    @classmethod
+    def _is_expired(cls, expires_at: datetime) -> bool:
+        # PostgreSQL preserves timezone information while SQLite commonly
+        # returns a naive datetime. Treat legacy/SQLite values as UTC so both
+        # backends follow the same expiration rule.
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        return expires_at < cls._now()
 
     @staticmethod
     def _token_hash(token: str) -> str:
@@ -106,7 +115,7 @@ class AuthService:
 
     def verify(self, db: Session, challenge_id: str, code: str) -> tuple[str, User, int]:
         challenge = db.get(OtpChallenge, challenge_id)
-        if not challenge or challenge.consumed or challenge.expires_at < self._now():
+        if not challenge or challenge.consumed or self._is_expired(challenge.expires_at):
             raise ValueError("The code has expired. Request a new one")
         if challenge.attempts >= self.settings.otp_max_attempts:
             raise ValueError("Too many incorrect attempts. Request a new code")
@@ -147,7 +156,7 @@ class AuthService:
                 UserSession.revoked.is_(False),
             )
         )
-        if not session or session.expires_at < self._now():
+        if not session or self._is_expired(session.expires_at):
             return None
         return db.get(User, session.user_id)
 
