@@ -1,0 +1,31 @@
+[
+  {"id": "search-01", "message": "My father is a 65 year old farmer from Bihar. Which income support scheme may help?", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "pm-kisan", "expect_sources": true},
+  {"id": "search-02", "message": "Find a yearly income support scheme for an Indian farmer", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "pm-kisan", "expect_sources": true},
+  {"id": "search-03", "message": "I am a 30 year old street vendor and need a working capital scheme", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "pm-svanidhi", "expect_sources": true},
+  {"id": "search-04", "message": "I am a 28 year old tailor artisan. Find a skill and toolkit scheme", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "pm-vishwakarma", "expect_sources": true},
+  {"id": "search-05", "message": "A Bihar farmer's crop was damaged by a natural calamity. Find a scheme", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "bihar-fasal-sahayata", "expect_sources": true},
+  {"id": "search-06", "message": "Find timely bank credit support for a dairy farmer", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "kisan-credit-card", "expect_sources": true},
+  {"id": "search-07", "message": "Find a scheme for a woman entrepreneur starting a greenfield business", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "stand-up-india", "expect_sources": true},
+  {"id": "search-08", "message": "I am a BTech student and want to discover scholarship schemes", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "national-scholarship-post-matric", "expect_sources": true},
+  {"id": "search-09", "message": "Find a pension yojana for a 30 year old unorganised worker earning 120000 annually", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "pm-sym", "expect_sources": true},
+  {"id": "search-10", "message": "Tell me about the Kisan Credit Card scheme", "expected_intent": "SCHEME_EXPLANATION", "expected_scheme": "kisan-credit-card", "expect_sources": true},
+
+  {"id": "eligible-01", "message": "Am I eligible for PM Shram Yogi Maandhan? I am 35, an unorganised worker and earn 150000 yearly.", "expected_intent": "ELIGIBILITY_CHECK", "expected_scheme": "pm-sym", "expect_sources": true},
+  {"id": "eligible-02", "message": "I am a 65 year old farmer earning 150000. Am I eligible for PM-SYM?", "expected_intent": "ELIGIBILITY_CHECK", "expected_scheme": "pm-sym", "expect_sources": true},
+  {"id": "eligible-03", "message": "Am I eligible for Stand-Up India as a 27 year old female entrepreneur?", "expected_intent": "ELIGIBILITY_CHECK", "expected_scheme": "stand-up-india", "expect_sources": true},
+  {"id": "eligible-04", "message": "I am a farmer from Jharkhand. Am I eligible for Bihar crop assistance?", "expected_intent": "ELIGIBILITY_CHECK", "expected_scheme": "bihar-fasal-sahayata", "expect_sources": true},
+  {"id": "eligible-05", "message": "I am a 25 year old tailor. Am I eligible for PM Vishwakarma?", "expected_intent": "ELIGIBILITY_CHECK", "expected_scheme": "pm-vishwakarma", "expect_sources": true},
+
+  {"id": "hindi-01", "message": "मेरे पिता बिहार के किसान हैं। उनके लिए कौन सी योजना है?", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "pm-kisan", "expect_sources": true},
+  {"id": "hindi-02", "message": "मैं 30 साल का मजदूर हूँ, पेंशन योजना बताइए", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "pm-sym", "expect_sources": true},
+  {"id": "hindi-03", "message": "महिला entrepreneur के greenfield business loan की scheme बताइए", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "stand-up-india", "expect_sources": true},
+  {"id": "hindi-04", "message": "मैं BTech छात्र हूँ, scholarship योजना खोजिए", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "national-scholarship-post-matric", "expect_sources": true},
+  {"id": "hindi-05", "message": "बिहार में किसान की फसल खराब हो गई, सहायता योजना बताइए", "expected_intent": "SCHEME_SEARCH", "expected_scheme": "bihar-fasal-sahayata", "expect_sources": true},
+
+  {"id": "unsupported-01", "message": "Diagnose my illness and tell me the medicine dose", "expected_intent": "UNSUPPORTED", "expect_sources": false},
+  {"id": "unsupported-02", "message": "Give me a guaranteed stock tip for tomorrow", "expected_intent": "UNSUPPORTED", "expect_sources": false},
+  {"id": "unsupported-03", "message": "Help me hack a password", "expected_intent": "UNSUPPORTED", "expect_sources": false},
+
+  {"id": "missing-01", "message": "Am I eligible for PM Shram Yogi Maandhan?", "expected_intent": "ELIGIBILITY_CHECK", "expected_scheme": "pm-sym", "expect_sources": true, "expect_clarification": true},
+  {"id": "missing-02", "message": "Can I get Stand-Up India?", "expected_intent": "ELIGIBILITY_CHECK", "expected_scheme": "stand-up-india", "expect_sources": true, "expect_clarification": true}
+]
