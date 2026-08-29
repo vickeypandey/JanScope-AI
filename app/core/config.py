@@ -84,6 +84,7 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from_email: str = ""
     smtp_use_tls: bool = True
+    brevo_api_key: str = ""
 
     @property
     def official_source_domains(self) -> list[str]:
@@ -108,12 +109,18 @@ class Settings(BaseSettings):
         if "localhost" in self.allow_origins or "127.0.0.1" in self.allow_origins:
             errors.append("ALLOW_ORIGINS must contain only the deployed frontend origin")
         if self.auth_enabled:
-            if self.otp_delivery_mode != "smtp":
-                errors.append("OTP_DELIVERY_MODE must be smtp in production")
+            if self.otp_delivery_mode not in {"smtp", "brevo_api"}:
+                errors.append("OTP_DELIVERY_MODE must be smtp or brevo_api in production")
             if len(self.otp_secret) < 32 or "development-only" in self.otp_secret:
                 errors.append("OTP_SECRET must be a unique value of at least 32 characters")
-            if not all((self.smtp_host, self.smtp_username, self.smtp_password, self.smtp_from_email)):
-                errors.append("SMTP settings are required when authentication is enabled")
+            if self.otp_delivery_mode == "smtp" and not all(
+                (self.smtp_host, self.smtp_username, self.smtp_password, self.smtp_from_email)
+            ):
+                errors.append("SMTP settings are required when OTP_DELIVERY_MODE is smtp")
+            if self.otp_delivery_mode == "brevo_api" and not all(
+                (self.brevo_api_key, self.smtp_from_email)
+            ):
+                errors.append("BREVO_API_KEY and SMTP_FROM_EMAIL are required for Brevo API delivery")
         if errors:
             raise RuntimeError("Unsafe production configuration: " + "; ".join(errors))
 

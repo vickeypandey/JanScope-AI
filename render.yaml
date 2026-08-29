@@ -2,24 +2,20 @@ services:
   - type: web
     name: janscope-api
     runtime: docker
-    plan: starter
+    plan: free
     dockerfilePath: ./Dockerfile.backend
     dockerContext: .
     healthCheckPath: /api/v1/health
     autoDeployTrigger: checksPass
-    disk:
-      name: janscope-data
-      mountPath: /app/storage
-      sizeGB: 1
     envVars:
       - key: ENVIRONMENT
         value: production
       - key: DATABASE_URL
-        value: sqlite:////app/storage/janscope.db
+        sync: false
       - key: CHROMA_PATH
-        value: /app/storage/chroma
+        value: /tmp/janscope-chroma
       - key: VECTOR_BACKEND
-        value: chroma
+        value: memory
       - key: SEED_SAMPLE_DATA
         value: "true"
       - key: AI_ENABLED
@@ -33,21 +29,13 @@ services:
       - key: AUTH_ENABLED
         value: "true"
       - key: OTP_DELIVERY_MODE
-        value: smtp
+        value: brevo_api
       - key: OTP_SECRET
         generateValue: true
-      - key: SMTP_HOST
-        value: smtp-relay.brevo.com
-      - key: SMTP_PORT
-        value: "587"
-      - key: SMTP_USERNAME
-        sync: false
-      - key: SMTP_PASSWORD
+      - key: BREVO_API_KEY
         sync: false
       - key: SMTP_FROM_EMAIL
         sync: false
-      - key: SMTP_USE_TLS
-        value: "true"
       - key: CONVERSATION_ACCESS_SECRET
         generateValue: true
       - key: ALLOW_ORIGINS

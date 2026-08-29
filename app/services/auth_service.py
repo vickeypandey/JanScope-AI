@@ -9,6 +9,8 @@ import uuid
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 
+import httpx
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -59,6 +61,9 @@ class AuthService:
         return challenge, None
 
     def _send_email(self, recipient: str, code: str) -> None:
+        if self.settings.otp_delivery_mode == "brevo_api":
+            self._send_brevo_api(recipient, code)
+            return
         if self.settings.otp_delivery_mode != "smtp":
             raise RuntimeError("Email delivery is not configured")
         message = EmailMessage()
@@ -75,6 +80,29 @@ class AuthService:
                 server.starttls()
             server.login(self.settings.smtp_username, self.settings.smtp_password)
             server.send_message(message)
+
+    def _send_brevo_api(self, recipient: str, code: str) -> None:
+        response = httpx.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "accept": "application/json",
+                "api-key": self.settings.brevo_api_key,
+                "content-type": "application/json",
+            },
+            json={
+                "sender": {"name": "JanScope AI", "email": self.settings.smtp_from_email},
+                "to": [{"email": recipient}],
+                "subject": "Your JanScope verification code",
+                "textContent": (
+                    f"Your JanScope verification code is {code}. "
+                    f"It expires in {self.settings.otp_expiry_minutes} minutes. "
+                    "If you did not request this code, you can ignore this email."
+                ),
+            },
+            timeout=15,
+        )
+        if response.status_code != 201:
+            raise RuntimeError(f"Brevo email delivery failed with status {response.status_code}")
 
     def verify(self, db: Session, challenge_id: str, code: str) -> tuple[str, User, int]:
         challenge = db.get(OtpChallenge, challenge_id)
