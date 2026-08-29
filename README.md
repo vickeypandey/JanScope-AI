@@ -1,205 +1,285 @@
 # JanScope AI
 
-JanScope AI is a source-grounded citizen-assistance application for discovering Indian government schemes, checking **provisional** eligibility through deterministic rules, answering questions with RAG, supporting English/Hindi/Hinglish, and preparing grievance drafts for human review.
+JanScope AI is a deployed government-scheme discovery assistant for Indian citizens. It combines source-grounded retrieval, preliminary rule-based eligibility checks and a conversational interface to make official scheme information easier to explore.
 
-It is a BTech/placement project—not a government system. It never guarantees eligibility or submits a grievance.
+The project is an independent student-built application. It is not affiliated with the Government of India and does not make final eligibility or approval decisions.
 
-## Key features
+[Open the live application](https://janscope.streamlit.app/) | [Backend health check](https://janscope-api.onrender.com/api/v1/health)
 
-- FastAPI REST backend with Swagger
-- Full Streamlit dashboard integrated with the backend
-- Local SQLite persistence for schemes and conversations
-- Citizen-profile extraction from English, Hindi and Hinglish text
-- Deterministic, explainable eligibility engine
-- Hybrid keyword + vector retrieval
-- ChromaDB persistent vector store with a no-download hashing embedder
-- LangChain documents and text splitting
-- LangGraph conditional workflow with a deterministic fallback
-- Optional Gemini generation using the official Google GenAI SDK
-- No-key demo mode
-- Grounded answers with numbered source citations
-- Clarification questions for missing profile information
-- English/Hindi grievance drafts with human-review requirement
-- Prompt-injection detection, input bounds, abstention and privacy-safe logs
-- Pytest API, workflow, retrieval and safety tests
-- Repeatable 25-question golden-dataset evaluation
-- Docker and Docker Compose
-- Windows one-click setup and run scripts
-- Postman collection and beginner documentation
+![JanScope AI welcome screen](docs/images/janscope-desktop.png)
 
-## Architecture
+## What the application does
+
+- Searches a catalog of 34 government schemes collected from official sources
+- Answers scheme questions through a lightweight Retrieval-Augmented Generation (RAG) pipeline
+- Shows numbered citations and official application links with generated answers
+- Performs explainable preliminary eligibility checks using encoded profile rules
+- Supports English, Hindi and Hinglish conversations
+- Extracts useful profile details from natural-language messages
+- Creates grievance drafts that the citizen can review before using
+- Provides passwordless account access through email OTP verification
+- Preserves user and conversation data in PostgreSQL
+- Continues with deterministic fallback responses if the Gemini API is unavailable
+- Works on desktop and mobile layouts
+
+## How it works
 
 ```mermaid
-flowchart TD
-    UI["Streamlit UI"] --> API["FastAPI routes"]
-    API --> WF["LangGraph workflow"]
-    WF --> PR["Profile + intent"]
-    WF --> RET["Hybrid retrieval"]
-    WF --> EL["Eligibility rules"]
-    RET --> CH["Chroma / memory vectors"]
-    PR --> DB["SQLite"]
-    EL --> DB
-    WF --> LLM["Gemini, optional"]
-    WF --> UI
+flowchart LR
+    U[Citizen] --> UI[Streamlit interface]
+    UI --> API[FastAPI REST API]
+    API --> AUTH[OTP authentication]
+    API --> WF[Conversation workflow]
+    WF --> PROFILE[Profile and intent extraction]
+    WF --> RET[Hybrid retrieval]
+    RET --> IDX[Scheme chunk index]
+    WF --> RULES[Eligibility rules]
+    RET --> LLM[Gemini grounded generation]
+    RULES --> LLM
+    LLM --> CITED[Answer with citations]
+    API <--> DB[(Neon PostgreSQL)]
+    AUTH --> EMAIL[Brevo email API]
 ```
 
-## Request workflow
+For a scheme question, JanScope builds a retrieval query from the message and the available citizen profile. It searches indexed scheme chunks using lexical relevance and vector similarity, runs deterministic checks where rules are encoded, and supplies the retrieved evidence to Gemini. The model is instructed to use only that evidence, mark eligibility as provisional and cite the supplied sources.
 
-```mermaid
-flowchart TD
-    A["Citizen message"] --> B["Safety + intent"]
-    B --> C["Extract profile"]
-    C --> D{"Route"}
-    D -->|Scheme question| E["Retrieve evidence"]
-    E --> F["Apply deterministic rules"]
-    F --> G["Grounded answer + sources"]
-    D -->|Grievance| H["Collect verified facts"]
-    D -->|Unsafe| I["Safe refusal"]
-```
+If generation is disabled or fails, the same retrieved schemes and rule results are returned through a deterministic template instead of failing the entire request.
+
+## RAG implementation
+
+JanScope uses a deliberately lightweight RAG design that can run on free hosting:
+
+1. Scheme records are converted into documents containing descriptions, benefits, application steps, required documents, official URLs and verification dates.
+2. Documents are divided into overlapping chunks using LangChain text splitters, with a local fallback splitter.
+3. A no-download hashing embedder converts the chunks and incoming query into numeric vectors.
+4. Retrieval combines vector similarity, keyword overlap, scheme-name relevance and state relevance.
+5. The highest-scoring evidence is inserted into a constrained Gemini prompt.
+6. The response includes numbered citations linked to official sources.
+
+The production deployment currently uses an in-memory vector index because it is small and inexpensive to rebuild. ChromaDB support is available for local persistent vector storage. A larger deployment could replace this with neural embeddings and pgvector or a managed vector database.
 
 ## Technology stack
 
-| Layer | Technology |
+| Area | Technology |
 |---|---|
-| Backend | Python 3.13/3.12, FastAPI, Uvicorn |
-| Validation | Pydantic |
-| Database | SQLite, SQLAlchemy 2 |
-| RAG | LangChain text splitting, custom hashing embeddings |
-| Vector store | ChromaDB with memory fallback |
+| Language | Python |
+| Backend | FastAPI, Uvicorn, Pydantic |
+| Frontend | Streamlit, custom responsive CSS, HTTPX |
+| Database | PostgreSQL on Neon, SQLAlchemy 2, psycopg |
+| Retrieval | Hybrid lexical/vector search, hashing embeddings |
+| RAG utilities | LangChain documents and text splitters |
 | Workflow | LangGraph with deterministic fallback |
-| LLM | Gemini through Google GenAI SDK, optional |
-| Frontend | Streamlit, HTTPX |
-| Testing | Pytest, FastAPI TestClient |
-| Packaging | Docker, Docker Compose, Windows batch files |
+| Generative AI | Google Gemini through the Google GenAI SDK |
+| Authentication | Email OTP, signed sessions, Brevo HTTPS API |
+| Deployment | Docker, Render, Streamlit Community Cloud |
+| Testing and CI | Pytest, FastAPI TestClient, GitHub Actions |
 
-## Quick start
+## Current deployment
 
-Read [START_HERE.md](START_HERE.md). On Windows:
+```mermaid
+flowchart TD
+    GH[GitHub repository] --> CI[GitHub Actions tests]
+    CI -->|checks pass| R[Render free web service]
+    GH --> SC[Streamlit Community Cloud]
+    SC -->|HTTPS requests| R
+    R --> N[(Neon PostgreSQL)]
+    R --> G[Google Gemini API]
+    R --> B[Brevo email API]
+```
+
+- **Frontend:** [janscope.streamlit.app](https://janscope.streamlit.app/)
+- **Backend:** [janscope-api.onrender.com](https://janscope-api.onrender.com/)
+- **Database:** Neon PostgreSQL
+- **Email delivery:** Brevo transactional email API
+- **Deployment branch:** `main`
+- **Deployment gate:** Render deploys after GitHub Actions passes
+
+The backend uses Render's free instance, so its first request after inactivity can take roughly a minute while the service starts. This is expected free-tier behavior rather than an application error.
+
+## Project structure
+
+```text
+JanScope-AI/
+|-- app/
+|   |-- api/              # FastAPI routes
+|   |-- core/             # configuration and security
+|   |-- db/               # database models and sessions
+|   |-- repositories/     # persistence operations
+|   |-- services/         # retrieval, AI, auth and workflow logic
+|   `-- main.py           # FastAPI application entry point
+|-- frontend/
+|   `-- streamlit_app.py  # public web interface
+|-- data/
+|   `-- schemes.json      # verified seed catalog
+|-- scripts/              # evaluation and official-source utilities
+|-- tests/                # API, workflow, retrieval and safety tests
+|-- render.yaml           # Render deployment definition
+|-- Dockerfile.backend    # backend container image
+`-- .github/workflows/    # continuous-integration checks
+```
+
+## Run locally
+
+### Requirements
+
+- Python 3.12 or newer
+- Git
+- A Gemini API key only if AI generation is required
+
+### Windows quick start
 
 ```bat
+git clone https://github.com/vickeypandey/JanScope-AI.git
+cd JanScope-AI
 setup.bat
 run_all.bat
 ```
 
-Then open:
+Open:
 
-- Frontend: <http://127.0.0.1:8501>
-- Swagger: <http://127.0.0.1:8000/docs>
+- Streamlit interface: <http://127.0.0.1:8501>
+- FastAPI documentation: <http://127.0.0.1:8000/docs>
 
-## Important API endpoints
+The API documentation is enabled for local development and intentionally disabled on the public production backend.
+
+### Manual setup
+
+```bash
+python -m venv .venv
+```
+
+Activate the environment and install the dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Copy `.env.example` to `.env`, update the required values, and start each service in a separate terminal:
+
+```bash
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+streamlit run frontend/streamlit_app.py
+```
+
+SQLite can be used for local development. PostgreSQL is used by the deployed application.
+
+## Configuration
+
+Configuration is read from environment variables. Do not commit real credentials or copy them into issues, screenshots or logs.
+
+Important settings include:
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | SQLite or PostgreSQL connection URL |
+| `AI_ENABLED` | Enables or disables model-generated responses |
+| `GEMINI_API_KEY` | Authenticates requests to Gemini |
+| `GEMINI_MODEL` | Selects the configured Gemini model |
+| `VECTOR_BACKEND` | Uses `memory` or `chroma` retrieval storage |
+| `AUTH_ENABLED` | Enables account and session authentication |
+| `OTP_DELIVERY_MODE` | Uses development, SMTP or Brevo API delivery |
+| `BREVO_API_KEY` | Authenticates transactional email requests |
+| `SMTP_FROM_EMAIL` | Verified sender address for OTP messages |
+| `OTP_SECRET` | Protects OTP verification values |
+| `ALLOW_ORIGINS` | Restricts browser origins accepted by the API |
+| `FRONTEND_URL` | Public frontend address used by the backend |
+
+Use `.env.production.example` as a production checklist. Store production values in Render and Streamlit's encrypted secret settings rather than in the repository.
+
+## Main API endpoints
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| GET | `/api/v1/health` | Service and mode status |
-| GET | `/api/v1/schemes` | Browse/filter schemes |
-| GET | `/api/v1/schemes/{slug}` | Scheme details |
-| POST | `/api/v1/profile/extract` | Extract provided citizen attributes |
-| POST | `/api/v1/auth/request-otp` | Request an email verification code |
-| POST | `/api/v1/auth/verify-otp` | Verify the code and create an account session |
-| POST | `/api/v1/auth/logout` | Revoke the current account session |
-| POST | `/api/v1/eligibility/check` | Explain provisional eligibility |
-| POST | `/api/v1/documents/ingest` | Chunk and index a scheme document |
-| POST | `/api/v1/documents/ingest-file` | Extract and index PDF/TXT/Markdown |
-| POST | `/api/v1/chat` | Run the complete JanScope workflow |
-| POST | `/api/v1/grievances/draft` | Create a reviewable draft |
-| GET | `/api/v1/conversations/{id}` | Read local conversation history |
+| `GET` | `/api/v1/health` | Service, database and feature status |
+| `GET` | `/api/v1/schemes` | Browse and filter schemes |
+| `GET` | `/api/v1/schemes/{slug}` | Read one scheme |
+| `POST` | `/api/v1/profile/extract` | Extract citizen attributes from text |
+| `POST` | `/api/v1/auth/request-otp` | Send an account verification code |
+| `POST` | `/api/v1/auth/verify-otp` | Verify the code and issue a session |
+| `POST` | `/api/v1/auth/logout` | Revoke an authenticated session |
+| `POST` | `/api/v1/eligibility/check` | Run preliminary rule checks |
+| `POST` | `/api/v1/chat` | Run the conversational retrieval workflow |
+| `POST` | `/api/v1/grievances/draft` | Produce a reviewable grievance draft |
+| `GET` | `/api/v1/conversations/{id}` | Read authorized conversation history |
 
-## Demo versus Gemini mode
+Document-ingestion and official-source synchronization endpoints are disabled in the public deployment. They require explicit configuration and a strong admin key when operated privately.
 
-| Capability | Demo mode | Gemini mode |
-|---|---:|---:|
-| Backend/frontend | Yes | Yes |
-| SQLite and Chroma | Yes | Yes |
-| Rule profile extraction | Yes | Yes |
-| Deterministic eligibility | Yes | Yes |
-| LangGraph workflow | Yes | Yes |
-| Template grounded answer | Yes | Fallback |
-| Natural grounded generation | No | Yes |
-| AI-assisted profile enrichment | No | Yes |
-| AI grievance wording | No | Yes |
+## Scheme data
 
-The application automatically returns to a safe deterministic response if Gemini is disabled or its request fails.
+The committed catalog contains 34 unique schemes. The original hand-curated records include detailed machine-checkable rules, while additional records were imported through the official myScheme API and retain their official myScheme URLs and verification dates.
 
-## Dataset design
+The catalog can be refreshed with:
 
-`data/schemes.json` is a small curated demonstration dataset with official portal URLs and a `last_verified` field. Encoded rules are only the machine-checkable subset. A production system would require automated freshness checks, complete official guidelines, human review, legal/privacy assessment and authenticated administrative updates.
+```powershell
+.venv\Scripts\python.exe scripts\refresh_seed_catalog.py
+```
 
-## Test
+Official scheme information changes over time. JanScope therefore displays source links and treats its results as guidance rather than final confirmation.
+
+## Security decisions
+
+- OTP codes expire, have limited attempts and are stored only as protected values.
+- Session and conversation access tokens are signed and can be revoked.
+- Authentication and chat routes are rate-limited.
+- Production refuses unsafe authentication and weak-secret configurations.
+- CORS is restricted to configured frontend origins.
+- Logs avoid message bodies, OTPs, tokens and citizen profile details.
+- Retrieved documents are treated as untrusted data, not model instructions.
+- Administrative ingestion is disabled by default.
+- API responses include restrictive browser-security headers.
+
+No system can remove all risk. Before a larger public launch, the project would need an independent security review, stronger monitoring, formal privacy documentation and a defined scheme-data review process.
+
+## Tests and evaluation
+
+Run the automated test suite:
 
 ```bash
 python -m pytest -q
 ```
 
-Run the repeatable demo evaluation:
+The current suite contains 19 passing tests covering API behavior, authentication, retrieval, workflow routing, safety handling and deterministic fallbacks.
+
+Run the repeatable 25-question evaluation:
 
 ```bash
 python scripts/evaluate.py
 ```
 
-See `EVALUATION.md` for the measured smoke results and their limitations.
+See [EVALUATION.md](EVALUATION.md) for the measured results and limitations.
 
-## Docker
+GitHub Actions runs the automated tests for repository updates. The Render deployment is configured to proceed only after those checks pass.
 
-Create `.env`, then run:
+## Design choices and limitations
 
-```bash
-docker compose up --build
-```
+This version is designed for a small demonstration audience rather than high traffic.
 
-Open <http://localhost:8501>.
+- Render's free instance can have cold-start delays.
+- Hashing embeddings are inexpensive and reproducible but less semantically capable than modern neural embeddings.
+- The in-memory vector index is rebuilt when the backend starts.
+- Eligibility coverage is limited to explicitly encoded rules.
+- Imported schemes without complete structured rules can be retrieved and explained but should not receive a definitive eligibility result.
+- Gemini may be unavailable because of quota or network limits; deterministic fallback behavior keeps the core application usable.
+- Grievance drafts require human review and are never submitted automatically.
 
-## Public deployment security
+## Possible next steps
 
-Use `.env.production.example` as the production configuration checklist and store all real secrets in the hosting provider's encrypted environment settings. Production startup fails when the conversation-signing secret is weak or CORS still permits localhost.
+- Replace hashing embeddings with a multilingual neural embedding model
+- Store vectors in pgvector or another persistent vector database
+- Add retrieval-quality and answer-faithfulness evaluation datasets
+- Introduce structured database migrations with Alembic
+- Add end-to-end browser tests for account and conversation flows
+- Improve monitoring for latency, model errors and email delivery
+- Add a reviewed administrative workflow for scheme updates
+- Expand accessibility and multilingual interface coverage
 
-- `/api/v1/chat` and `/api/v1/grievances/draft` are rate-limited per client address.
-- Document ingestion is disabled by default. To operate it privately, set `INGESTION_ENABLED=true`, configure a strong `ADMIN_API_KEY`, and send it only in the `X-Admin-Key` header.
-- Conversation continuation and history require the signed token returned by the first chat response.
-- Request sizes, profile field lengths, attachment counts, CORS origins, API documentation, and proxy trust are environment-controlled.
-- API responses include restrictive browser security headers, and application logs contain route templates rather than message bodies, personal details, or conversation identifiers.
+## Resume summary
 
-The built-in limiter is intentionally single-process. For multiple backend replicas, enforce shared rate limits with Redis, a reverse proxy, or the hosting provider's API gateway.
+> Built and deployed a RAG-based government-scheme discovery platform using FastAPI, Streamlit, Gemini, hybrid retrieval and Neon PostgreSQL. Implemented source-grounded responses, deterministic preliminary eligibility checks, email OTP authentication, Docker deployment and GitHub Actions CI/CD across a catalog of 34 verified schemes.
 
-### Passwordless email OTP
+## Responsible use
 
-The welcome page offers Login, Create account, and Demo access. Local development uses `OTP_DELIVERY_MODE=development` and displays the short-lived code on screen. Production deliberately refuses to start with this mode.
-
-For deployment, set `OTP_DELIVERY_MODE=smtp`, generate a unique `OTP_SECRET`, and add the SMTP values shown in `.env.production.example`. A free-tier SMTP provider can be used for a low-traffic project. Codes expire after 10 minutes, attempts are limited, only code hashes are stored, and issued session tokens can be revoked at logout. Never commit SMTP credentials to GitHub.
-
-## Live official scheme synchronization
-
-JanScope can incrementally cache public scheme pages from the official myScheme sitemap. It only fetches allowlisted government hosts, checks `robots.txt`, uses bounded batches and delays, stores the source URL and verification date, and refreshes the retrieval index. Gemini explains the cached official content; it is never treated as the source of scheme facts.
-
-Enable `LIVE_SOURCE_SYNC_ENABLED=true` and set a strong `ADMIN_API_KEY`. The backend then runs a bounded sync on startup and every `LIVE_SYNC_INTERVAL_HOURS`. You can also run:
-
-```powershell
-.venv\Scripts\python.exe scripts\sync_official_sources.py --max-pages 25
-```
-
-Or call `POST /api/v1/admin/sources/myscheme/sync` with the admin key in `X-Admin-Key`. Increase the batch gradually rather than crawling the entire catalogue at once.
-
-## Project ownership and interview readiness
-
-Treat this generated repository as a reference implementation first. To honestly own it, you should be able to:
-
-1. Trace `POST /api/v1/chat` from Streamlit to the database and back.
-2. Explain why eligibility is deterministic rather than fully LLM-generated.
-3. Build a tiny hashing/cosine retrieval program yourself.
-4. Add one profile field and one scheme rule.
-5. Modify a LangGraph route.
-6. Diagnose a failed test and API error.
-7. Replace or add a scheme document and rebuild the index.
-8. Explain limitations without claiming government-grade accuracy.
-
-## Resume description
-
-> Built an agentic RAG-based citizen-assistance platform using FastAPI, Streamlit, LangChain, LangGraph, ChromaDB and Gemini, with source-grounded scheme discovery, deterministic eligibility checks, Hindi/Hinglish support, conversational memory and human-reviewed grievance drafting.
-
-## Safety and limitations
-
-- This is not affiliated with the Government of India or any state government.
-- Eligibility results are provisional and cover only encoded rules.
-- Scheme information can change after the dataset verification date.
-- Bank loans, scholarships and government benefits require official verification and approval.
-- Avoid entering unnecessary Aadhaar numbers, bank account numbers or sensitive identifiers.
-- Grievance text must be reviewed by the applicant before submission.
+- Verify eligibility, deadlines, documents and application steps on the linked official portal.
+- Do not enter Aadhaar numbers, bank credentials or government-portal passwords.
+- Do not treat a generated response as legal, financial or government approval advice.
+- Review every grievance draft before using it.
