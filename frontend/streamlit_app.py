@@ -12,7 +12,7 @@ st.set_page_config(
     page_title="JanScope AI",
     page_icon="🌱",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 
@@ -23,7 +23,7 @@ CSS = """
         --muted:#6f766d; --line:#ded8ca; --terracotta:#c65f3c; --terracotta-dark:#9d4229;
         --olive:#66734e; --olive-soft:#e8ecd9; --sand:#ead5b5;
     }
-    html, body, [class*="css"] { font-family: "Aptos", "Segoe UI", sans-serif; }
+    html, body, [class*="css"] { font-family: "Aptos", "Segoe UI", sans-serif; overflow-wrap:anywhere; }
     .stApp {
         color:var(--ink);
         background:
@@ -65,10 +65,10 @@ CSS = """
     .hero .eyebrow { color:#e9c89d; text-transform:uppercase; letter-spacing:.16em; font-size:.7rem; font-weight:700; margin-bottom:.55rem; }
     .hero h1 { font-family:Georgia,serif; margin:0 0 .5rem; font-size:clamp(2rem,4vw,3.25rem); line-height:1; letter-spacing:-.035em; max-width:78%; }
     .hero p { margin:0; color:#dbe0d7; font-size:1rem; max-width:68%; line-height:1.55; }
-    .surface { background:rgba(255,253,248,.88); border:1px solid var(--line); border-radius:1.05rem 1.05rem 1.05rem .3rem; padding:1.05rem 1.12rem;
+    .surface { background:rgba(255,253,248,.88); border:1px solid var(--line); border-radius:1.05rem 1.05rem 1.05rem .3rem; padding:1.05rem 1.12rem; overflow:hidden;
         box-shadow:0 8px 24px rgba(54,48,34,.055); margin-bottom:.8rem; }
     .surface h3 { margin:.05rem 0 .5rem; font-size:1.05rem; }
-    .scheme-card { position:relative; background:var(--card); border:1px solid var(--line); border-radius:1.1rem 1.1rem .35rem 1.1rem; padding:1.15rem;
+    .scheme-card { position:relative; background:var(--card); border:1px solid var(--line); border-radius:1.1rem 1.1rem .35rem 1.1rem; padding:1.15rem; overflow:hidden;
         min-height:245px; box-shadow:0 8px 22px rgba(54,48,34,.055); transition:transform .18s ease, box-shadow .18s ease; }
     .scheme-card:hover { transform:translateY(-4px); box-shadow:0 15px 30px rgba(54,48,34,.09); }
     .scheme-card:before { content:""; display:block; width:34px; height:4px; border-radius:5px; background:var(--terracotta); margin-bottom:.85rem; }
@@ -169,28 +169,36 @@ CSS = """
     h2 { font-family:Georgia,serif; letter-spacing:-.02em; }
     a { color:var(--terracotta-dark); }
     @media (max-width: 700px) {
-        .block-container { padding-top:1rem; }
+        .block-container { padding:1rem .85rem 2rem; max-width:100%; }
+        [data-testid="stSidebar"] { max-width:86vw; }
         .hero { padding:1.6rem 1.4rem; }
-        .hero h1 { max-width:90%; font-size:2rem; }
-        .hero p { max-width:92%; font-size:.9rem; }
+        .hero h1 { max-width:100%; font-size:clamp(1.7rem,8vw,2rem); padding-right:1rem; }
+        .hero p { max-width:100%; font-size:.9rem; }
         .hero:after { width:120px; height:120px; right:-55px; top:-45px; border-width:25px; }
         .public-grid { grid-template-columns:1fr; }
         .scheme-card { min-height:auto; }
-        div[data-testid="stHorizontalBlock"] { gap:.65rem; }
+        .scheme-title { min-height:0; }
+        .badge, .question-chip, .welcome-point, .access-trust span { max-width:100%; white-space:normal; }
+        .profile-row { align-items:flex-start; flex-direction:column; gap:.15rem; }
+        .profile-value { text-align:left; }
+        div[data-testid="stMetricValue"] { white-space:normal; font-size:1.45rem; }
+        .stButton button, .stDownloadButton button, .stLinkButton a { white-space:normal!important; min-height:2.6rem; }
+        div[data-testid="stHorizontalBlock"] { gap:.65rem; flex-wrap:wrap; }
+        div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] { flex:1 1 100%!important; width:100%!important; min-width:0!important; }
         div[data-testid="stHorizontalBlock"]:has(.welcome-hero) {
             background:
                 radial-gradient(circle at 92% -3%, rgba(198,95,60,.9) 0 58px, transparent 59px),
                 linear-gradient(180deg, #26332b 0%, #26332b 35%, rgba(38,51,43,.88) 43%, rgba(246,242,233,.92) 58%, rgba(246,242,233,.98) 100%);
         }
         div[data-testid="stHorizontalBlock"]:has(.welcome-hero) > div[data-testid="stColumn"]:last-child { padding:1rem 1rem 1.5rem; min-height:45svh; }
-        div[data-testid="stHorizontalBlock"]:has(.welcome-hero):after { font-size:3rem; bottom:.5rem; right:.5rem; }
+        div[data-testid="stHorizontalBlock"]:has(.welcome-hero):after { display:none; }
         .welcome-hero { padding:6rem 1.4rem 2.2rem; min-height:55svh; }
         .welcome-brand-on-hero { left:1.4rem; top:1.15rem; }
         .welcome-brand-on-hero .brand-mark { width:42px; height:42px; font-size:20px; }
         .welcome-brand-on-hero .brand-name { font-size:1.2rem; }
         .welcome-brand-on-hero .brand-sub { font-size:.62rem; }
-        .welcome-hero h1 { font-size:2.15rem; max-width:92%; }
-        .welcome-hero p { max-width:92%; font-size:.92rem; }
+        .welcome-hero h1 { font-size:clamp(1.9rem,10vw,2.15rem); max-width:100%; }
+        .welcome-hero p { max-width:100%; font-size:.92rem; }
         .access-heading { margin-top:1rem; }
     }
 </style>
