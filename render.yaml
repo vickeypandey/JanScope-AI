@@ -1,0 +1,66 @@
+services:
+  - type: web
+    name: janscope-api
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile.backend
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    autoDeployTrigger: checksPass
+    disk:
+      name: janscope-data
+      mountPath: /app/storage
+      sizeGB: 1
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        value: sqlite:////app/storage/janscope.db
+      - key: CHROMA_PATH
+        value: /app/storage/chroma
+      - key: VECTOR_BACKEND
+        value: chroma
+      - key: SEED_SAMPLE_DATA
+        value: "true"
+      - key: AI_ENABLED
+        value: "true"
+      - key: AI_PROVIDER
+        value: gemini
+      - key: GEMINI_MODEL
+        value: gemini-3.7-flash
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: AUTH_ENABLED
+        value: "true"
+      - key: OTP_DELIVERY_MODE
+        value: smtp
+      - key: OTP_SECRET
+        generateValue: true
+      - key: SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_USE_TLS
+        value: "true"
+      - key: CONVERSATION_ACCESS_SECRET
+        generateValue: true
+      - key: ALLOW_ORIGINS
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: PROJECT_GITHUB_URL
+        value: https://github.com/vickeypandey/JanScope-AI
+      - key: TRUST_PROXY_HEADERS
+        value: "true"
+      - key: API_DOCS_ENABLED
+        value: "false"
+      - key: INGESTION_ENABLED
+        value: "false"
+      - key: LIVE_SOURCE_SYNC_ENABLED
+        value: "false"
